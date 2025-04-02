@@ -171,6 +171,7 @@ fun WebBrowser(modifier: Modifier = Modifier) {
                             Text("URL Eingeben")
                         }
                         TextButton(
+                            modifier = Modifier.padding(5.dp),
                             onClick = {
                                 showChangePasswordDialog = true
                                 showUrlInput = false

@@ -19,6 +19,7 @@ class PasswordManager(
 
 
 
+
     // Save the admin password to SharedPreferences
     fun savePassword(newPassword: String) {
         sharedPreferences.edit().putString("ADMIN_PASSWORD", newPassword).apply()
@@ -47,11 +48,14 @@ class PasswordManager(
         var isPasswordIncorrectTwo by remember { mutableStateOf(false) }
         var isPasswordIncorrectThree by remember { mutableStateOf(false) }
         var isPasswordIncorrectFour by remember { mutableStateOf(false) }
+        var isPasswordIncorrectFive by remember { mutableStateOf(false) }
 
         if (showDialog) {
             AlertDialog(
+                modifier = Modifier.padding(5.dp),
                 onDismissRequest = onDismiss,
-                title = { Text("Passwort ändern", fontSize = 18.sp) },
+                title = {
+                    Text("Passwort ändern", fontSize = 18.sp) },
                 text = {
                     Column {
                         // Step 1: Ask for the current admin password
@@ -91,7 +95,7 @@ class PasswordManager(
                         if (isPasswordIncorrect) {
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                "Aktuelles Passwort ist Falsch! Bitte versuchen Sie es erneut.",
+                                "Aktuelles Passwort ist Falsch! Bitte versuchen Sie es erneut und füllen sie die restlichen Felder aus.",
                                 color = Color.Red,
                                 fontSize = 14.sp
                             )
@@ -123,6 +127,15 @@ class PasswordManager(
                                 fontSize = 14.sp
                             )
                         }
+
+                        if (isPasswordIncorrectFive) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                "Bitte füllen sie die Felder wieder aus.",
+                                color = Color.Red,
+                                fontSize = 14.sp
+                            )
+                        }
                     }
                 },
                 confirmButton = {
@@ -130,23 +143,131 @@ class PasswordManager(
                         if (adminPassword != correctPassword && newPassword == "" && confirmNewPassword =="") {
                             // Validate the current password
                             isPasswordIncorrect = true
+                            isPasswordIncorrectTwo = false
+                            isPasswordIncorrectThree = false
+                            isPasswordIncorrectFour = false
                             adminPassword = ""
-                        } else if (newPassword != confirmNewPassword) {
+                        }
+
+                        else if (newPassword != "" && confirmNewPassword == "" && adminPassword != "" ) {
+                            // Validate new password and confirmation
+                            isPasswordIncorrectFour = false
+                            confirmNewPassword = ""
+                            isPasswordIncorrect = false
+                            isPasswordIncorrectTwo = false
+                            isPasswordIncorrectThree = true
+                        }
+
+                        else if (newPassword != confirmNewPassword  && adminPassword != correctPassword ) {
+                            // Validate new password and confirmation
+                            isPasswordIncorrectFour = false
+                            confirmNewPassword = ""
+                            newPassword = ""
+                            adminPassword = ""
+                            isPasswordIncorrect = false
+                            isPasswordIncorrectTwo = false
+                            isPasswordIncorrectThree = false
+                            isPasswordIncorrectFive = true
+                        }
+
+                        else if (newPassword == "" && confirmNewPassword != "" && adminPassword != "" ) {
+                            // Validate new password and confirmation
+                            isPasswordIncorrectFour = false
+                            newPassword = ""
+                            isPasswordIncorrect = false
+                            isPasswordIncorrectTwo = false
+                            isPasswordIncorrectThree = true
+                        }
+
+                        else if (newPassword == "" && confirmNewPassword != "" && adminPassword == "" ) {
+                            // Validate new password and confirmation
+                            isPasswordIncorrectFour = false
+                            newPassword = ""
+                            isPasswordIncorrect = false
+                            isPasswordIncorrectTwo = false
+                            isPasswordIncorrectThree = true
+                        }
+
+                        else if (newPassword == "" && confirmNewPassword == "" && adminPassword != "" ) {
+                            // Validate new password and confirmation
+                            isPasswordIncorrectFour = false
+                            isPasswordIncorrect = false
+                            isPasswordIncorrectTwo = false
+                            isPasswordIncorrectThree = true
+                        }
+
+
+                        else if (newPassword != confirmNewPassword && adminPassword != "") {
                             // Validate new password and confirmation
                             isPasswordIncorrectFour = true
                             newPassword = ""
                             confirmNewPassword = ""
+                            isPasswordIncorrect = false
+                            isPasswordIncorrectTwo = false
+                            isPasswordIncorrectThree = false
                         }
-                        else if (newPassword == confirmNewPassword && newPassword == "" && confirmNewPassword =="") {
+                        else if (newPassword != ""  && adminPassword  == "" && confirmNewPassword =="") {
                             // Validate new password and confirmation
                             isPasswordIncorrectThree = true
+
+                            isPasswordIncorrect = false
+                            isPasswordIncorrectTwo = false
+                            isPasswordIncorrectFour = false
+
                         }
+
+                        else if (newPassword != "" && adminPassword == "" && confirmNewPassword =="") {
+                            // Validate new password and confirmation
+                            isPasswordIncorrectThree = true
+
+                            isPasswordIncorrect = false
+                            isPasswordIncorrectTwo = false
+                            isPasswordIncorrectFour = false
+
+                        }
+
+
+                        else if (newPassword == confirmNewPassword && adminPassword == "") {
+                            // Validate new password and confirmation
+                            isPasswordIncorrect = false
+                            isPasswordIncorrectTwo = false
+                            isPasswordIncorrectThree = true
+                            isPasswordIncorrectFour = false
+                            adminPassword = ""
+                        }
+
+                        else if (newPassword != "" && confirmNewPassword != "" && adminPassword == "") {
+                            // Validate new password and confirmation
+                            isPasswordIncorrect = false
+                            isPasswordIncorrectTwo = false
+                            isPasswordIncorrectThree = true
+                            isPasswordIncorrectFour = false
+                            adminPassword = ""
+                        }
+
+
 
                         else if (newPassword == confirmNewPassword && adminPassword != correctPassword) {
                             // Validate new password and confirmation
-                            isPasswordIncorrect = true
+                            isPasswordIncorrect = false
+                            isPasswordIncorrectTwo = true
+                            isPasswordIncorrectThree = false
+                            isPasswordIncorrectFour = false
                             adminPassword = ""
                         }
+
+
+
+
+                        else if (newPassword == "" && confirmNewPassword == "" && adminPassword == "") {
+                            // Validate new password and confirmation
+                            isPasswordIncorrect = false
+                            isPasswordIncorrectTwo = false
+                            isPasswordIncorrectThree = true
+                            isPasswordIncorrectFour = false
+                            adminPassword = ""
+                        }
+
                              else {
                             // Save the new password and notify the parent
                             savePassword(newPassword)
