@@ -140,7 +140,7 @@ class PasswordManager(
                 },
                 confirmButton = {
                     Button(onClick = {
-                        if (adminPassword != correctPassword && newPassword == "" && confirmNewPassword =="") {
+                        if (adminPassword != correctPassword && newPassword == "" && confirmNewPassword =="" && adminPassword != "" ) {
                             // Validate the current password
                             isPasswordIncorrect = true
                             isPasswordIncorrectTwo = false
@@ -156,9 +156,10 @@ class PasswordManager(
                             isPasswordIncorrect = false
                             isPasswordIncorrectTwo = false
                             isPasswordIncorrectThree = true
+                            isPasswordIncorrectFive = false
                         }
 
-                        else if (newPassword != confirmNewPassword  && adminPassword != correctPassword ) {
+                        else if (newPassword != confirmNewPassword  && adminPassword != correctPassword && newPassword != "" && adminPassword != "" && confirmNewPassword != ""  ) {
                             // Validate new password and confirmation
                             isPasswordIncorrectFour = false
                             confirmNewPassword = ""
@@ -177,6 +178,8 @@ class PasswordManager(
                             isPasswordIncorrect = false
                             isPasswordIncorrectTwo = false
                             isPasswordIncorrectThree = true
+                            isPasswordIncorrectFive = false
+
                         }
 
                         else if (newPassword == "" && confirmNewPassword != "" && adminPassword == "" ) {
@@ -186,6 +189,7 @@ class PasswordManager(
                             isPasswordIncorrect = false
                             isPasswordIncorrectTwo = false
                             isPasswordIncorrectThree = true
+                            isPasswordIncorrectFive = false
                         }
 
                         else if (newPassword == "" && confirmNewPassword == "" && adminPassword != "" ) {
@@ -194,10 +198,11 @@ class PasswordManager(
                             isPasswordIncorrect = false
                             isPasswordIncorrectTwo = false
                             isPasswordIncorrectThree = true
+                            isPasswordIncorrectFive = false
                         }
 
 
-                        else if (newPassword != confirmNewPassword && adminPassword != "") {
+                        else if (newPassword != confirmNewPassword && (adminPassword != "" || adminPassword == "")) {
                             // Validate new password and confirmation
                             isPasswordIncorrectFour = true
                             newPassword = ""
@@ -205,6 +210,7 @@ class PasswordManager(
                             isPasswordIncorrect = false
                             isPasswordIncorrectTwo = false
                             isPasswordIncorrectThree = false
+                            isPasswordIncorrectFive = false
                         }
                         else if (newPassword != ""  && adminPassword  == "" && confirmNewPassword =="") {
                             // Validate new password and confirmation
@@ -213,13 +219,13 @@ class PasswordManager(
                             isPasswordIncorrect = false
                             isPasswordIncorrectTwo = false
                             isPasswordIncorrectFour = false
-
+                            isPasswordIncorrectFive = false
                         }
 
                         else if (newPassword != "" && adminPassword == "" && confirmNewPassword =="") {
                             // Validate new password and confirmation
                             isPasswordIncorrectThree = true
-
+                            isPasswordIncorrectFive = false
                             isPasswordIncorrect = false
                             isPasswordIncorrectTwo = false
                             isPasswordIncorrectFour = false
@@ -233,6 +239,7 @@ class PasswordManager(
                             isPasswordIncorrectTwo = false
                             isPasswordIncorrectThree = true
                             isPasswordIncorrectFour = false
+                            isPasswordIncorrectFive = false
                             adminPassword = ""
                         }
 
@@ -242,6 +249,7 @@ class PasswordManager(
                             isPasswordIncorrectTwo = false
                             isPasswordIncorrectThree = true
                             isPasswordIncorrectFour = false
+                            isPasswordIncorrectFive = false
                             adminPassword = ""
                         }
 
@@ -253,6 +261,7 @@ class PasswordManager(
                             isPasswordIncorrectTwo = true
                             isPasswordIncorrectThree = false
                             isPasswordIncorrectFour = false
+                            isPasswordIncorrectFive = false
                             adminPassword = ""
                         }
 
@@ -265,7 +274,8 @@ class PasswordManager(
                             isPasswordIncorrectTwo = false
                             isPasswordIncorrectThree = true
                             isPasswordIncorrectFour = false
-                            adminPassword = ""
+                            isPasswordIncorrectFive = false
+
                         }
 
                              else {
@@ -286,6 +296,7 @@ class PasswordManager(
                         isPasswordIncorrectTwo = false
                         isPasswordIncorrectThree = false
                         isPasswordIncorrectFour = false
+                        isPasswordIncorrectFive = false
                         adminPassword = ""
                         newPassword = ""
                         confirmNewPassword = ""
