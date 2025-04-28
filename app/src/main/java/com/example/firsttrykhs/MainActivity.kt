@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 
 class MainActivity : ComponentActivity() {
 
+    private lateinit var passwordManager: PasswordManager
     private lateinit var devicePolicyManager: DevicePolicyManager
     private lateinit var adminComponentName: ComponentName
     private lateinit var sharedPreferences: SharedPreferences
@@ -32,6 +33,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+
+
+
+
+
         // Initialize DevicePolicyManager and admin component
         devicePolicyManager = getSystemService(DEVICE_POLICY_SERVICE) as DevicePolicyManager
         adminComponentName = ComponentName(this, MyDeviceAdminReceiver::class.java)
@@ -41,7 +47,6 @@ class MainActivity : ComponentActivity() {
 
         // Start in kiosk mode if enabled
         if (isKioskModeEnabled) enableKioskMode()
-
         setContent {
             var showAdminDialog by remember { mutableStateOf(false) }
             var showReLockDialog by remember { mutableStateOf(false) }
