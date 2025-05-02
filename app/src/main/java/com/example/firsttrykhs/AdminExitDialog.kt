@@ -1,3 +1,4 @@
+import android.content.Context
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,65 +12,82 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.firsttrykhs.FourEyesPasswordChangeDialog
+import com.example.firsttrykhs.KioskPasswordManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AdminExitDialog(onDismiss: () -> Unit, onUnlock: () -> Unit) {
+fun AdminExitDialog(
+    context: Context,
+    onDismiss: () -> Unit,
+    onUnlock: () -> Unit
+) {
+    val passwordManager = remember { KioskPasswordManager(context) }
     var password by remember { mutableStateOf("") }
-    val correctPassword = "1234" // Change this password as needed
-    var isPasswordIncorrect by remember { mutableStateOf(false) } // Track if password is incorrect
+    var isPasswordIncorrect by remember { mutableStateOf(false) }
+    var showPasswordChangeDialog by remember { mutableStateOf(false) }
+
+    fun verifyPassword(): Boolean {
+        return passwordManager.verifyPrimaryPassword(password)
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Admin-Zugang") },
+        title = { Text("Administratorzugriff ") },
         text = {
             Column {
-                Text("Geben Sie das Admin-Passwort ein, um den Kiosk-Modus zu verlassen", fontSize = 20.sp)
+                // Password change button (only shown when unlocked)
+
+
+                Text("Geben Sie das primäre Administratorkennwort ein, um den Kioskmodus zu verlassen ", fontSize = 20.sp)
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Conditionally apply red border and border radius if the password is incorrect
                 TextField(
                     value = password,
                     onValueChange = {
                         password = it
-                        isPasswordIncorrect = false // Reset error when typing
+                        isPasswordIncorrect = false
                     },
-                    label = { Text("Passwort", modifier = Modifier.fillMaxWidth()) },
+                    label = { Text("Primäres Kennwort") },
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions.Default.copy(
                         imeAction = ImeAction.Done
                     ),
                     keyboardActions = KeyboardActions(
                         onDone = {
-                            if (password == correctPassword) {
-                                onUnlock()
-                            } else {
-                                isPasswordIncorrect = true // Mark password as incorrect if wrong
-                            }
+                            val isValid = verifyPassword()
+                            isPasswordIncorrect = !isValid
+                            if (isValid) onUnlock()
                         }
                     ),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .then(
-                            if (isPasswordIncorrect) {
-                                Modifier
-                                    .border(2.dp, Color.Red, RoundedCornerShape(8.dp)) // Apply red border with rounded corners
-                            } else {
-                                Modifier
-                                    .border(2.dp, Color.Gray, RoundedCornerShape(8.dp)) // Default border color
-                            }
+                        .border(
+                            2.dp,
+                            if (isPasswordIncorrect) Color.Red else Color.Gray,
+                            RoundedCornerShape(8.dp)
                         ),
                     colors = TextFieldDefaults.textFieldColors(
                         containerColor = Color.White,
-                        focusedIndicatorColor = Color.Transparent, // Remove underline when focused
-                        unfocusedIndicatorColor = Color.Transparent // Remove underline when not focused
-                    )
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent
+                    ),
+                    isError = isPasswordIncorrect
                 )
+                if (!showPasswordChangeDialog) {
+                    Button(
+                        onClick = { showPasswordChangeDialog = true },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp)
+                    ) {
+                        Text("Passwort ändern")
+                    }
+                }
 
-                // Display error message if the password is incorrect
                 if (isPasswordIncorrect) {
                     Text(
-                        text = "Falsches Passwort! Bitte versuchen Sie es erneut.",
+                        text = "Falsches Kennwort! Bitte versuchen Sie es erneut",
                         color = Color.Red,
                         fontSize = 14.sp
                     )
@@ -77,13 +95,13 @@ fun AdminExitDialog(onDismiss: () -> Unit, onUnlock: () -> Unit) {
             }
         },
         confirmButton = {
-            Button(onClick = {
-                if (password == correctPassword) {
-                    onUnlock()
-                } else {
-                    isPasswordIncorrect = true // Mark password as incorrect if wrong
+            Button(
+                onClick = {
+                    val isValid = verifyPassword()
+                    isPasswordIncorrect = !isValid
+                    if (isValid) onUnlock()
                 }
-            }) {
+            ) {
                 Text("Entsperren")
             }
         },
@@ -91,7 +109,20 @@ fun AdminExitDialog(onDismiss: () -> Unit, onUnlock: () -> Unit) {
             Button(onClick = onDismiss) {
                 Text("Abbrechen")
             }
-        }
-        ,containerColor = Color.LightGray
+        },
+        containerColor = Color.LightGray
     )
+
+    // Show password change dialog when triggered
+    if (showPasswordChangeDialog) {
+        FourEyesPasswordChangeDialog(
+            context = context,
+            showDialog = showPasswordChangeDialog,
+            onDismiss = { showPasswordChangeDialog = false },
+            onPasswordChanged = {
+                showPasswordChangeDialog = false
+                // Optionally show a confirmation message
+            }
+        )
+    }
 }

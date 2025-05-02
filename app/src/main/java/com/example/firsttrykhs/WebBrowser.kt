@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.net.http.SslError
 import android.os.Handler
+import android.util.Log
 import android.webkit.SslErrorHandler
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -47,19 +48,29 @@ import kotlinx.coroutines.delay
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.ui.text.TextRange
+import java.io.File
 
 @SuppressLint("SetJavaScriptEnabled")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WebBrowser(modifier: Modifier = Modifier) {
+
     val context = LocalContext.current
     val sharedPreferences = remember { context.getSharedPreferences("WebBrowserPrefs", Context.MODE_PRIVATE) }
 
-    // Create a MutableState for the correct password
-    var correctPassword by remember { mutableStateOf(sharedPreferences.getString("ADMIN_PASSWORD", "12345") ?: "12345") }
+    fun collectMetrics(): Map<String, Any> {
+        return mapOf(
+            "webview_memory_kb" to Runtime.getRuntime().totalMemory() / 1024,
+            "storage_bytes" to File(context.filesDir, "shared_prefs/WebBrowserPrefs.xml").length(),
+            "failed_auth_attempts" to sharedPreferences.getInt("failed_attempts", 0)
+        )
+    }
+
+
+    // Initialize PasswordManager with default password
+    var adminPassword by remember { mutableStateOf(sharedPreferences.getString("ADMIN_PASSWORD", "12345") ?: "12345") }
     var showUrlInput by remember { mutableStateOf(false) }
-    // Pass the correctPassword state to the PasswordManager
-    val passwordManager = remember { PasswordManager(sharedPreferences, correctPassword, showUrlInput) }
+    val passwordManager = remember { PasswordManager(context, adminPassword) }
 
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusRequester = remember { FocusRequester() }
@@ -85,39 +96,44 @@ fun WebBrowser(modifier: Modifier = Modifier) {
     val handler = remember { Handler() }
     var isUserInteracting by remember { mutableStateOf(false) }
 
+    LaunchedEffect(Unit) {
+        while (true) {
+            val metrics = collectMetrics()
+            Log.d("AUTO_METRICS", metrics.toString())
+            delay(1000) // Every minute
+        }
+    }
+
     // Monitor user interaction
     LaunchedEffect(isUserInteracting) {
         if (!isUserInteracting) {
-            delay(2000) // Add a 2-second delay to allow smooth hiding
+            delay(2000)
             isTopBarVisible = false
         }
     }
 
-    // Create a NestedScrollConnection for handling scrolling behavior
     val nestedScrollConnection = remember {
         object : NestedScrollConnection {
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                // If we are scrolling vertically, detect swipe direction
                 return super.onPreScroll(available, source)
             }
         }
     }
 
-    // Reset the inactivity timer whenever user interacts
     val resetInteractionTimer = {
         isUserInteracting = true
-        handler.removeCallbacksAndMessages(null) // Clear previous interactions
+        handler.removeCallbacksAndMessages(null)
         handler.postDelayed({
-            isUserInteracting = false // After 2 seconds of inactivity, hide the top bar
-        }, 2000) // Reset timer to 2 seconds
+            isUserInteracting = false
+        }, 2000)
     }
 
     Scaffold(
         topBar = {
             AnimatedVisibility(
                 visible = isTopBarVisible,
-                enter = fadeIn(animationSpec = tween(durationMillis = 500)), // Medium speed fade-in
-                exit = fadeOut(animationSpec = tween(durationMillis = 500)) // Medium speed fade-out
+                enter = fadeIn(animationSpec = tween(durationMillis = 500)),
+                exit = fadeOut(animationSpec = tween(durationMillis = 500))
             ) {
                 TopAppBar(
                     title = {
@@ -158,7 +174,6 @@ fun WebBrowser(modifier: Modifier = Modifier) {
                     },
                     actions = {
                         TextButton(
-
                             onClick = {
                                 showPasswordDialog = true
                                 resetInteractionTimer()
@@ -192,23 +207,20 @@ fun WebBrowser(modifier: Modifier = Modifier) {
             Column(
                 Modifier
                     .padding(paddingValues)
-                    .nestedScroll(nestedScrollConnection) // Apply nested scroll connection
+                    .nestedScroll(nestedScrollConnection)
                     .pointerInput(Unit) {
                         detectVerticalDragGestures { _, dragAmount ->
-                            // If the user swipes down, show the top bar
                             if (dragAmount > 0) {
                                 isTopBarVisible = true
                             }
-                            // If the user swipes up, hide the top bar
                             else if (dragAmount < 0) {
                                 isTopBarVisible = false
                             }
-                            resetInteractionTimer() // Reset timer on scroll as well
+                            resetInteractionTimer()
                         }
                     }
             ) {
                 if (showUrlInput) {
-                    // Ensure the input field shows up even without internet
                     TextField(
                         value = textFieldValue,
                         onValueChange = { newValue ->
@@ -220,11 +232,10 @@ fun WebBrowser(modifier: Modifier = Modifier) {
                             .focusRequester(focusRequester)
                             .onFocusChanged { focusState ->
                                 if (focusState.isFocused && shouldSelectAllText) {
-                                    // Select all text when the field gains focus
                                     textFieldValue = textFieldValue.copy(
                                         selection = TextRange(0, textFieldValue.text.length)
                                     )
-                                    shouldSelectAllText = false // Reset the flag
+                                    shouldSelectAllText = false
                                 }
                             },
                         singleLine = true,
@@ -233,7 +244,7 @@ fun WebBrowser(modifier: Modifier = Modifier) {
                             onDone = {
                                 loadUrlFromTextField(textFieldValue.text) { formattedUrl ->
                                     url = formattedUrl
-                                    webView?.loadUrl(url) // If there's no internet, this won't block UI
+                                    webView?.loadUrl(url)
                                     saveUrl(sharedPreferences, url)
                                     showUrlInput = false
                                     keyboardController?.hide()
@@ -247,9 +258,8 @@ fun WebBrowser(modifier: Modifier = Modifier) {
 
                     LaunchedEffect(showUrlInput) {
                         if (showUrlInput) {
-                            // Request focus after the TextField is composed
                             focusRequester.requestFocus()
-                            shouldSelectAllText = true // Set the flag to select all text
+                            shouldSelectAllText = true
                         }
                     }
                 }
@@ -271,12 +281,11 @@ fun WebBrowser(modifier: Modifier = Modifier) {
                                     handler: SslErrorHandler,
                                     error: SslError
                                 ) {
-                                    // Allow invalid certificates (for testing only)
                                     handler.proceed()
                                 }
                             }
                             settings.javaScriptEnabled = true
-                            loadUrl(url) // Handle URL even if there's no internet
+                            loadUrl(url)
                             webView = this
                         }
                     },
@@ -290,7 +299,7 @@ fun WebBrowser(modifier: Modifier = Modifier) {
         AlertDialog(
             onDismissRequest = {
                 showPasswordDialog = false
-                enteredPassword = "" // Clear password on dismissal
+                enteredPassword = ""
                 isPasswordIncorrect = false
             },
             title = { Text("Bitte geben Sie das Passwort ein", fontSize = 18.sp) },
@@ -315,16 +324,16 @@ fun WebBrowser(modifier: Modifier = Modifier) {
             },
             confirmButton = {
                 Button(onClick = {
-                    if (enteredPassword == correctPassword) {
+                    if (passwordManager.verifyPassword(enteredPassword)) {
                         showPasswordDialog = false
-                        enteredPassword = "" // Clear password on success
+                        enteredPassword = ""
                         isPasswordIncorrect = false
-                        textFieldValue = TextFieldValue(url) // Reset TextFieldValue with the current URL
-                        shouldSelectAllText = true // Set the flag to select all text
-                        showUrlInput = true // Show the URL input field
+                        textFieldValue = TextFieldValue(url)
+                        shouldSelectAllText = true
+                        showUrlInput = true
                     } else {
                         isPasswordIncorrect = true
-                        enteredPassword = "" // Clear password on incorrect attempt
+                        enteredPassword = ""
                     }
                 }) {
                     Text("Bestätigen")
@@ -333,7 +342,7 @@ fun WebBrowser(modifier: Modifier = Modifier) {
             dismissButton = {
                 Button(onClick = {
                     showPasswordDialog = false
-                    enteredPassword = "" // Clear password on dismissal
+                    enteredPassword = ""
                     isPasswordIncorrect = false
                 }) {
                     Text("Abbrechen")
@@ -343,31 +352,23 @@ fun WebBrowser(modifier: Modifier = Modifier) {
         )
     }
 
-    // Use PasswordManager's ChangePasswordDialog
     passwordManager.ChangePasswordDialog(
-
         showDialog = showChangePasswordDialog,
         onDismiss = { showChangePasswordDialog = false },
         onPasswordChanged = { newPassword ->
-            correctPassword = newPassword // Update the correct password
+            adminPassword = passwordManager.getPasswordHash()
         }
     )
-
-    // Use PasswordManager's ForgotPasswordDialog
-
 }
 
-// Save the URL to SharedPreferences
 fun saveUrl(sharedPreferences: SharedPreferences, url: String) {
     sharedPreferences.edit().putString("LAST_URL", url).apply()
 }
 
-// Load the saved URL from SharedPreferences
 fun loadSavedUrl(sharedPreferences: SharedPreferences): String {
     return sharedPreferences.getString("LAST_URL", "https://www.google.com") ?: "https://www.google.com"
 }
 
-// Format and load the URL from the input field
 fun loadUrlFromTextField(inputUrl: String, onUrlUpdated: (String) -> Unit) {
     val formattedUrl = if (!inputUrl.startsWith("http://") && !inputUrl.startsWith("https://")) {
         "https://$inputUrl"

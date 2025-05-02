@@ -1,5 +1,6 @@
 package com.example.firsttrykhs
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -17,37 +18,44 @@ import androidx.compose.ui.unit.sp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ReLockDialog(onDismiss: () -> Unit, onReLock: () -> Unit) {
+fun ReLockDialog(
+    context: Context,
+    onDismiss: () -> Unit,
+    onReLock: () -> Unit
+) {
+    val passwordManager = remember { KioskPasswordManager(context) }
     var password by remember { mutableStateOf("") }
     var isPasswordIncorrect by remember { mutableStateOf(false) }
-    val correctPassword = "1234" // Change this as needed
+
+    fun verifyPassword(): Boolean {
+        // Verify against primary password for re-locking
+        return passwordManager.verifyPrimaryPassword(password)
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Kiosk-Modus erneut sperren") },
         text = {
             Column {
-                Text("Geben Sie das Passwort ein, um den Kiosk-Modus erneut zu sperren:", fontSize = 18.sp)
+                Text("Geben Sie das primäre Admin-Passwort ein, um den Kiosk-Modus erneut zu sperren:", fontSize = 18.sp)
                 Spacer(modifier = Modifier.height(8.dp))
 
                 TextField(
                     value = password,
                     onValueChange = {
                         password = it
-                        isPasswordIncorrect = false // Reset error when typing
+                        isPasswordIncorrect = false
                     },
                     singleLine = true,
                     isError = isPasswordIncorrect,
-                    label = { Text("Passwort") },
+                    label = { Text("Primäres Passwort") },
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(
                         onDone = {
-                            if (password == correctPassword) {
-                                onReLock()
-                            } else {
-                                isPasswordIncorrect = true
-                            }
+                            val isValid = verifyPassword()
+                            isPasswordIncorrect = !isValid
+                            if (isValid) onReLock()
                         }
                     ),
                     modifier = Modifier
@@ -60,12 +68,11 @@ fun ReLockDialog(onDismiss: () -> Unit, onReLock: () -> Unit) {
                         .background(Color.White, shape = RoundedCornerShape(8.dp)),
                     colors = TextFieldDefaults.textFieldColors(
                         containerColor = Color.White,
-                        focusedIndicatorColor = Color.Transparent, // Remove underline when focused
-                        unfocusedIndicatorColor = Color.Transparent // Remove underline when not focused
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent
                     )
                 )
 
-                // Display error message if password is incorrect
                 if (isPasswordIncorrect) {
                     Text(
                         text = "Falsches Passwort! Bitte versuchen Sie es erneut.",
@@ -76,13 +83,13 @@ fun ReLockDialog(onDismiss: () -> Unit, onReLock: () -> Unit) {
             }
         },
         confirmButton = {
-            Button(onClick = {
-                if (password == correctPassword) {
-                    onReLock()
-                } else {
-                    isPasswordIncorrect = true // Show error if password is wrong
+            Button(
+                onClick = {
+                    val isValid = verifyPassword()
+                    isPasswordIncorrect = !isValid
+                    if (isValid) onReLock()
                 }
-            }) {
+            ) {
                 Text("Sperren")
             }
         },
@@ -90,7 +97,7 @@ fun ReLockDialog(onDismiss: () -> Unit, onReLock: () -> Unit) {
             Button(onClick = onDismiss) {
                 Text("Abbrechen")
             }
-        }
-        ,containerColor = Color.LightGray
+        },
+        containerColor = Color.LightGray
     )
 }

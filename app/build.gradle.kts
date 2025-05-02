@@ -52,6 +52,7 @@ android {
 dependencies {
 
     implementation(libs.bcrypt)
+    implementation(libs.androidx.security.crypto) // EncryptedSharedPreferences
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
